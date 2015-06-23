@@ -1,40 +1,61 @@
-<!DOCTYPE HTML>
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01//EN"
+"http://www.w3.org/TR/html4/strict.dtd">
 <html>
+<head>
+ 
+<!-- Change this if you want to allow scaling -->
+   <meta name="viewport"  user-scalable="no" />
+   <meta http-equiv="Content-type" content="text/html;charset=utf-8">
+ 
+   <title>Embedded Sql Example</title>
+ 
+    <script type="text/javascript" charset="utf-8" src="phonegap.js"></script>
+ 
+    <script type="text/javascript" charset="utf-8" src="js/jquery-2.1.4.min.js"></script>
 
-   <head>
-  
-      <script type="text/javascript">
-    
-         var db = openDatabase('mydb', '1.0', 'Test DB', 2 * 1024 * 1024);
-         var msg;
-      
-         db.transaction(function (tx) {
-            tx.executeSql('CREATE TABLE IF NOT EXISTS LOGS (id unique, log)');
-            tx.executeSql('INSERT INTO LOGS (id, log) VALUES (1, "foobar")');
-            tx.executeSql('INSERT INTO LOGS (id, log) VALUES (2, "logmsg")');
-            msg = '<p>Log message created and row inserted.</p>';
-            document.querySelector('#status').innerHTML =  msg;
-         });
+    <script type="text/javascript" charset="utf-8">
+     
+      // Wait for Cordova to load
+    document.addEventListener("deviceready", onDeviceReady, false);
 
-         db.transaction(function (tx) {
-            tx.executeSql('SELECT * FROM LOGS', [], function (tx, results) {
-               var len = results.rows.length, i;
-               msg = "<p>Found rows: " + len + "</p>";
-               document.querySelector('#status').innerHTML +=  msg;
-          
-               for (i = 0; i < len; i++){
-                  msg = "<p><b>" + results.rows.item(i).log + "</b></p>";
-                  document.querySelector('#status').innerHTML +=  msg;
-               }
-            }, null);
-         });
-      
-      </script>
-    
-   </head>
-  
-   <body>
-      <div id="status" name="status">Status Message</div>
-   </body>
-  
-</html>
+    // Cordova is ready
+    function onDeviceReady() {
+      var db = window.sqlitePlugin.openDatabase({name: "DB"});
+
+      db.transaction(function(tx) {
+        tx.executeSql('DROP TABLE IF EXISTS test_table');
+        tx.executeSql('CREATE TABLE IF NOT EXISTS test_table (id integer primary key, data text, data_num integer)');
+
+        // demonstrate PRAGMA:
+        db.executeSql("pragma table_info (test_table);", [], function(res) {
+          console.log("PRAGMA res: " + JSON.stringify(res));
+        });
+
+        tx.executeSql("INSERT INTO test_table (data, data_num) VALUES (?,?)", ["test", 100], function(tx, res) {
+          console.log("insertId: " + res.insertId + " -- probably 1");
+          console.log("rowsAffected: " + res.rowsAffected + " -- should be 1");
+
+          db.transaction(function(tx) {
+            tx.executeSql("select count(id) as cnt from test_table;", [], function(tx, res) {
+              console.log("res.rows.length: " + res.rows.length + " -- should be 1");
+              console.log("res.rows.item(0).cnt: " + res.rows.item(0).cnt + " -- should be 1");
+            });
+          });
+
+        }, function(e) {
+          console.log("ERROR: " + e.message);
+        });
+      });
+    }
+       
+    </script>
+</head>
+<body onload="onDeviceReady()">
+<h1>WebSQL</h1>
+<br>
+<span style="font-weight:bold;">Currently stored values:</span>
+<span id="lbUsers"></span>
+
+
+</body>
+</html> 
